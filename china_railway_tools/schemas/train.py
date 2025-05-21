@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional, Dict
 
 from pydantic import BaseModel, ConfigDict
@@ -8,51 +9,6 @@ class Ticket(BaseModel):
     stock: str
     seat_type: str
     price: str
-
-
-class TrainInfo(BaseModel):
-    depart_date: str
-    train_date: str
-    tickets: List[Ticket]
-    from_station: str
-    from_station_code: str
-    to_station: str
-    to_station_code: str
-    train_code: str
-    train_no: str
-    first_station_code: str
-    end_station_code: str
-
-    def __hash__(self):
-        # 使用 train_code 作为哈希值
-        return hash((self.train_code, self.train_date, self.from_station, self.to_station))
-
-    @classmethod
-    def from_raw_dict(cls, depart_date: str, raw_data: dict):
-        """
-        :param depart_date: date of current station departure
-        :param raw_data: raw data queried from 12306
-        """
-        return cls(
-            depart_date=depart_date,
-            train_date=datetime.strptime(raw_data['start_train_date'], '%Y%m%d').strftime('%Y-%m-%d'),
-            train_no=raw_data['train_no'],
-            train_code=raw_data['station_train_code'],
-            tickets=[
-                Ticket(
-                    stock=x['stock'],
-                    seat_type=x['seatType'],
-                    price=str(x['price'])
-                )
-                for x in raw_data.get('prices', [])
-            ],
-            from_station=raw_data['from_station_name'],
-            from_station_code=raw_data['from_station_telecode'],
-            to_station=raw_data['to_station_name'],
-            to_station_code=raw_data['to_station_telecode'],
-            first_station_code=raw_data['start_station_telecode'],
-            end_station_code=raw_data['end_station_telecode'],
-        )
 
 
 class TrainNo(BaseModel):
@@ -91,6 +47,58 @@ class StopInfo(BaseModel):
         return hours * 60 + minutes
 
 
+class TrainInfo(BaseModel):
+    depart_date: str
+    train_date: str
+    tickets: List[Ticket]
+    from_station: str
+    from_station_code: str
+    to_station: str
+    to_station_code: str
+    train_code: str
+    train_no: str
+    first_station_code: str
+    end_station_code: str
+    from_stop_info: StopInfo = None
+    to_stop_info: StopInfo = None
+    stop_info_list: List[StopInfo] = None
+
+    def __hash__(self):
+        # 使用 train_code 作为哈希值
+        return hash((self.train_code, self.train_date, self.from_station, self.to_station))
+
+    @classmethod
+    def from_raw_dict(cls, depart_date: str, raw_data: dict):
+        """
+        :param depart_date: date of current station departure
+        :param raw_data: raw data queried from 12306
+        """
+        return cls(
+            depart_date=depart_date,
+            train_date=datetime.strptime(raw_data['start_train_date'], '%Y%m%d').strftime('%Y-%m-%d'),
+            train_no=raw_data['train_no'],
+            train_code=raw_data['station_train_code'],
+            tickets=[
+                Ticket(
+                    stock=x['stock'],
+                    seat_type=x['seatType'],
+                    price=str(x['price'])
+                )
+                for x in raw_data.get('prices', [])
+            ],
+            from_station=raw_data['from_station_name'],
+            from_station_code=raw_data['from_station_telecode'],
+            to_station=raw_data['to_station_name'],
+            to_station_code=raw_data['to_station_telecode'],
+            first_station_code=raw_data['start_station_telecode'],
+            end_station_code=raw_data['end_station_telecode'],
+        )
+
+    def get_lowest_price(self) -> Decimal:
+        ticket = min(self.tickets, key=lambda t: Decimal(t.price))
+        return Decimal(ticket.price)
+
+
 class TrainSchedule(BaseModel):
     train_no: str
     train_date: str
@@ -112,6 +120,9 @@ class TrainSchedule(BaseModel):
         if index is None:
             return None
         return self.schedule[index]
+
+    def get_stop_index(self, station_name: str) -> int | None:
+        return self.name_index.get(station_name)
 
     def get_first(self) -> StopInfo:
         return self.schedule[0]

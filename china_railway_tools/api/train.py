@@ -3,6 +3,7 @@ import logging
 
 from china_railway_tools.api.common import get_station, train_code2no, get_station_by_names, query_train_schedule
 from china_railway_tools.schemas.query import *
+from china_railway_tools.schemas.response import TrainTicketResponse
 from china_railway_tools.schemas.station import Station
 from china_railway_tools.schemas.train import *
 from china_railway_tools.utils.DataStore import DataStore
@@ -52,12 +53,14 @@ def divide_trip(train_schedule: TrainSchedule, form: QueryTrainTicket):
 
 
 @complete_train_no(train_code2no=train_code2no)
-async def query_train_prices(form: QueryTrainTicket):
+async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     train_schedule: TrainSchedule = await query_train_schedule(
         QueryTrainSchedule(train_date=form.train_date, train_no=form.train_no), )
     if train_schedule.get_stop_info(form.from_station) is None or train_schedule.get_stop_info(
             form.to_station) is None:
         raise Exception('出发站或到达站不属于该次列车')
+    if train_schedule.get_stop_index(form.from_station) > train_schedule.get_stop_index(form.to_station):
+        raise Exception("出发站不能在到达站之后")
     station_names = train_schedule.get_station_names(form.from_station, form.to_station)
 
     if form.partition >= 2:
@@ -70,21 +73,24 @@ async def query_train_prices(form: QueryTrainTicket):
         raise Exception(
             f'Query station result is not matched station names. Station names:{station_names} Result:{stations}')
     stations = [next((obj for obj in stations if obj.name == name), None) for name in station_names]
-    tickets = []
 
     async def ticket_task(_station: Station, _next_station: Station):
         q_ticket = QueryTrains(from_station_code=_station.code, to_station_code=_next_station.code,
                                dep_date=form.train_date)
-        ticket = await query_tickets(q_ticket)
-        _ticket = list(
-            filter(lambda x: train_data_filter(x, form.train_no, _station.code, _next_station.code), ticket))
-        if len(_ticket) != 1:
-            logger.warning(f'{_station}-{_next_station} 车票结果不符合预期 {ticket}')
+        train_info_list = await query_tickets(q_ticket)
+        train_info_list = list(
+            filter(lambda x: train_data_filter(x, from_code=_station.code, to_code=_next_station.code,
+                                               train_no=form.train_no, ), train_info_list))
+        if len(train_info_list) != 1:
+            logger.warning(f'{_station}-{_next_station} 车票结果不符合预期 {train_info_list}')
             return None
-        return _ticket[0]
+        train_info: TrainInfo = train_info_list[0]
+        train_info.from_stop_info = train_schedule.get_stop_info(_station.name)
+        train_info.to_stop_info = train_schedule.get_stop_info(_next_station.name)
+        return train_info
 
     tasks = []
-    # query ticket from departure station to arrival station
+    # query train_info from departure station to arrival station
     task = asyncio.create_task(ticket_task(stations[0], stations[-1]))
     tasks.append(task)
     for index, station in enumerate(stations[0:-1]):
@@ -94,11 +100,10 @@ async def query_train_prices(form: QueryTrainTicket):
 
     # 使用 asyncio.gather 等待所有任务完成
     results = await asyncio.gather(*tasks)
-    for result in results:
-        if result is not None:
-            tickets.append(result)
-
-    return tickets
+    results = list(results)
+    response = TrainTicketResponse.from_raw_data(train_info=results[0], detail_trains=results[1:],
+                                                 train_schedule=train_schedule)
+    return response
 
 
 @validate_query_train(get_station=get_station)

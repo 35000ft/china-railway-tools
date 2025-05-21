@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 FETCH_URLS = {
     # GET 查询余票
-    'QUERY_TICKETS': 'https://kyfw.12306.cn/otn/leftTicket/queryG',
+    'QUERY_TICKETS': 'https://kyfw.12306.cn/otn/leftTicket/queryU',
     # POST 获取cookies
     'GET_COOKIES': 'https://www.12306.cn/index/otn/login/conf',
     # GET 查询余票
@@ -104,17 +104,14 @@ async def fetch_trains(form, **kwargs) -> list:
             'leftTicketDTO.to_station': form.to_station_code,
             'purpose_codes': 'ADULT',
         }
-        logger.info(f'fetch trains params: {_params}')
         cookies = await (await get_cookie_store()).get_valid_cookie()
         _headers = HeadersBuilder() \
             .add_header('Referer', 'https://kyfw.12306.cn/otn/leftTicket/init?') \
             .add_header('Cookie', cookies) \
             .add_header('if-modified-since', '0').build()
         async with get_async_client() as client:
-            response = await client.get(_url, params=_params, headers=_headers, cookies=None)
-            if response.status_code != 200:
-                logger.warning(f"fetch trains error: response: {response.status_code} {response.text}")
-                raise Exception('fetch_trains ERROR')
+            response = await client.get(_url, params=_params, headers=_headers, cookies=None, follow_redirects=True)
+            response.raise_for_status()
             _raw_data = response.json()
             _x = _raw_data['data']
             _result = await parse_ticket_data(_x, dep_date=form.dep_date.strftime('%Y-%m-%d'))

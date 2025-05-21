@@ -43,12 +43,12 @@ def parse_stop_info_list(_data: dict):
         for x in _data]
 
 
-def train_data_filter(_train_info: TrainInfo, train_no: str, from_station: str = None, to_station: str = None) -> bool:
+def train_data_filter(_train_info: TrainInfo, train_no: str, from_code: str = None, to_code: str = None) -> bool:
     condition = True
-    if from_station is not None:
-        condition = condition and _train_info.from_station_code == from_station
-    if to_station is not None:
-        condition = condition and _train_info.to_station_code == to_station
+    if from_code is not None:
+        condition = condition and _train_info.from_station_code == from_code
+    if to_code is not None:
+        condition = condition and _train_info.to_station_code == to_code
     if train_no is not None:
         condition = condition and _train_info.train_no == train_no
     return condition

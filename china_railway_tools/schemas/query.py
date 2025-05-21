@@ -80,20 +80,3 @@ class QueryTrainTicket(BaseModel):
         if not train_no and not train_code:
             raise ValueError("Either 'train_no' or 'train_code' is required.")
         return values
-
-    def __init__(self,
-                 from_station: str,
-                 to_station: str,
-                 train_no: str,
-                 train_code: str,
-                 train_date: str = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
-                 **kwargs):
-        super().__init__(
-            # 将字段作为关键字参数传递给父类的 __init__ 方法
-            from_station=from_station,
-            to_station=to_station,
-            train_date=train_date,
-            train_code=train_code,
-            train_no=train_no,
-            **kwargs
-        )
