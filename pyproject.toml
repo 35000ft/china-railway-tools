@@ -1,5 +1,5 @@
 [project]
-name = "china-railway-tools_yunshang"
+name = "china_railway_tools"
 version = "0.1.0"
 description = "China Railway Tools"
 authors = [{ name = "Yunshang", email = "above35000ft@foxmail.com" }]
