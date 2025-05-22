@@ -5,7 +5,7 @@ from sqlalchemy import or_, func, and_
 from sqlalchemy import select
 
 from china_railway_tools.database.connection import AsyncSessionLocal
-from china_railway_tools.database.curd import batch_add_train_no
+from china_railway_tools.database.curd import batch_add_train_no, query_cached_result
 from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult
 from china_railway_tools.schemas.query import QueryTrainSchedule
 from china_railway_tools.schemas.station import Station
@@ -75,10 +75,11 @@ async def get_station(code_or_name: str) -> Optional[Station]:
 async def query_train_schedule(form: QueryTrainSchedule) -> Optional[TrainSchedule]:
     query_key = form.train_code if form.train_code is not None else form.train_no
     category = 'train_schedule'
-    train_schedule: TrainSchedule = await fetch_train_schedule(form)
-    async with AsyncSessionLocal() as session:
-        t_r = QueryResult(date=form.train_date.strftime('%Y-%m-%d'), query_key=query_key, category=category,
-                          result=train_schedule.model_dump_json())
-        session.add(t_r)
-        await session.commit()
+
+    async def empty_cb():
+        return await fetch_train_schedule(form)
+
+    train_schedule: TrainSchedule = await query_cached_result(query_key=query_key, category=category, empty_cb=empty_cb,
+                                                              _date=form.train_date, pydantic_class=TrainSchedule)
+
     return train_schedule

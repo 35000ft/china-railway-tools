@@ -54,6 +54,9 @@ def divide_trip(train_schedule: TrainSchedule, form: QueryTrainTicket):
 
 @complete_train_no(train_code2no=train_code2no)
 async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
+    """
+    查询某车次指定区间分段购买的票价
+    """
     train_schedule: TrainSchedule = await query_train_schedule(
         QueryTrainSchedule(train_date=form.train_date, train_no=form.train_no), )
     if train_schedule.get_stop_info(form.from_station) is None or train_schedule.get_stop_info(
@@ -110,8 +113,12 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
 async def query_tickets(form: QueryTrains, **kwargs) -> List[TrainInfo]:
     ds = DataStore()
     dep_date_str = form.dep_date.strftime('%Y-%m-%d')
+    train_info_list: List[TrainInfo] = []
     query_key = f'{form.from_station_code}-{form.to_station_code}-{dep_date_str}'
-    train_info_list: List[TrainInfo] = ds.get(query_key)
+
+    if not form.force_update:
+        train_info_list = ds.get(query_key)
+        
     if train_info_list is None:
         train_info_list = await fetch_trains(form)
     elif isinstance(train_info_list, List) and len(train_info_list) == 0:

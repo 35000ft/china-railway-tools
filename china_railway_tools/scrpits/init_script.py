@@ -8,7 +8,7 @@ from sqlalchemy.dialects.sqlite import insert
 
 from china_railway_tools.config import get_config
 from china_railway_tools.database.connection import AsyncSessionLocal
-from china_railway_tools.database.schema import MStation, MTrainNo
+from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult
 from china_railway_tools.schemas.station import Station
 from china_railway_tools.utils.cr_fetcher import fetch_all_stations
 from china_railway_tools.utils.exception_utils import extract_exception_traceback
@@ -20,6 +20,7 @@ async def main():
     await check_update_stations()
     if get_config('auto_clean_train_no'):
         await clean_train_no()
+    await clean_cache_result()
 
 
 async def check_update_stations():
@@ -81,6 +82,16 @@ async def clean_train_no():
         async with session.begin():
             await session.execute(
                 delete(MTrainNo).where(MTrainNo.date < target_date)
+            )
+
+
+async def clean_cache_result():
+    async with AsyncSessionLocal() as session:
+        max_days = get_config('max_cached_days', 3)
+        target_date: datetime = (datetime.now() - timedelta(days=max_days))
+        async with session.begin():
+            await session.execute(
+                delete(QueryResult).where(QueryResult.created_at < target_date)
             )
 
 

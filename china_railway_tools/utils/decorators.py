@@ -48,3 +48,24 @@ def complete_train_no(train_code2no, train_code_attr_name='train_code', train_da
         return wrapper
 
     return decorator
+
+
+def validate_date_param(date_param_name: str):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            if date_param_name not in kwargs:
+                raise Exception('date param must be in kwargs')
+            date_value = kwargs.get(date_param_name)
+            if isinstance(date_value, datetime):
+                date_value = date_value.strftime('%Y-%m-%d')
+            elif isinstance(date_value, str):
+                date_value = datetime.strptime(date_value, '%Y-%m-%d').strftime('%Y-%m-%d')
+            else:
+                raise TypeError("_date must be datetime or str")
+            kwargs[date_param_name] = date_value
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
