@@ -15,6 +15,10 @@ class QueryTrains(BaseModel):
     dep_date: datetime = Field((datetime.now() + timedelta(days=1)), title="出发日期")
     train_codes: List[str] = Field([], title='筛选车次')
     stations: List[str] = Field([], title='筛选车站')
+    via_stations: List[str] = Field([], title='列车需要途径的车站名')
+    transfer_stations: List[str] = Field([], title='指定换乘车站')
+    min_transfer_minutes: int = Field(15, title='最小换乘时间',
+                                      description='列车到站距离接续列车开车时间的间隔, 单位:分钟')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 

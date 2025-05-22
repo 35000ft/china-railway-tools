@@ -2,7 +2,6 @@ import json
 from datetime import datetime, timedelta
 from typing import List
 
-from pydantic import BaseModel
 from sqlalchemy import select, and_
 
 from china_railway_tools.database.connection import AsyncSessionLocal

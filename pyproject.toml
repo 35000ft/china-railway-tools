@@ -1,0 +1,32 @@
+[project]
+name = "china-railway-tools_yunshang"
+version = "0.1.0"
+description = "China Railway Tools"
+authors = [{ name = "Yunshang", email = "above35000ft@foxmail.com" }]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-only" }
+
+dependencies = [
+    "aiosqlite==0.21.0",
+    "annotated-types==0.7.0",
+    "anyio==4.9.0",
+    "appdirs==1.4.4",
+    "certifi==2025.4.26",
+    "greenlet==3.2.2",
+    "h11==0.16.0",
+    "httpcore==1.0.9",
+    "httpx==0.28.1",
+    "idna==3.10",
+    "lxml==5.4.0",
+    "pydantic==2.11.4",
+    "pydantic_core==2.33.2",
+    "sniffio==1.3.1",
+    "SQLAlchemy==2.0.41",
+    "typing-inspection==0.4.0",
+    "typing_extensions==4.13.2"
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
