@@ -12,19 +12,6 @@ PERSONAL_CONFIG = {
 }
 
 
-def get_default_db_url():
-    sqlite_dir = get_config("sqlite_dir")
-    if not sqlite_dir:
-        sqlite_dir = user_data_dir(APP_NAME, APP_AUTHOR)
-    db_path = os.path.join(sqlite_dir, 'data.db')
-    if not os.path.exists(os.path.dirname(db_path)):
-        os.makedirs(os.path.dirname(db_path))
-    return f"sqlite:///{db_path}"
-
-
-SQLALCHEMY_DATABASE_URL = get_default_db_url()
-
-
 def set_config(config: AppConfig):
     global PERSONAL_CONFIG
     PERSONAL_CONFIG = config.model_dump()
@@ -39,3 +26,13 @@ def get_config(key: str, default=None):
         else:
             return default
     return current
+
+
+def get_default_db_url():
+    sqlite_dir = get_config("sqlite_dir")
+    if not sqlite_dir:
+        sqlite_dir = user_data_dir(APP_NAME, APP_AUTHOR)
+    db_path = os.path.join(sqlite_dir, 'data.db')
+    if not os.path.exists(os.path.dirname(db_path)):
+        os.makedirs(os.path.dirname(db_path))
+    return f"sqlite:///{db_path}"
