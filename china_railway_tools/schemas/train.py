@@ -118,7 +118,12 @@ class TrainSchedule(BaseModel):
     def get_stop_info(self, station_name: str) -> Optional[StopInfo]:
         index = self.name_index.get(station_name)
         if index is None:
-            return None
+            # 模糊匹配
+            names = [x for x in self.name_index.keys() if station_name in x]
+            if len(names) == 0:
+                return None
+            else:
+                index = self.name_index.get(names[0])
         return self.schedule[index]
 
     def get_stop_index(self, station_name: str) -> int | None:

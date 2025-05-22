@@ -59,18 +59,23 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     """
     train_schedule: TrainSchedule = await query_train_schedule(
         QueryTrainSchedule(train_date=form.train_date, train_no=form.train_no), )
-    if train_schedule.get_stop_info(form.from_station) is None or train_schedule.get_stop_info(
-            form.to_station) is None:
+    from_stop_info: StopInfo = train_schedule.get_stop_info(form.from_station)
+    to_stop_info: StopInfo = train_schedule.get_stop_info(form.to_station)
+
+    form.from_station = from_stop_info.station_name
+    form.to_station = to_stop_info.station_name
+    if from_stop_info is None or to_stop_info is None:
         raise Exception('出发站或到达站不属于该次列车')
-    if train_schedule.get_stop_index(form.from_station) > train_schedule.get_stop_index(form.to_station):
+    if train_schedule.get_stop_index(from_stop_info.station_name) > train_schedule.get_stop_index(
+            to_stop_info.station_name):
         raise Exception("出发站不能在到达站之后")
-    station_names = train_schedule.get_station_names(form.from_station, form.to_station)
+    station_names = train_schedule.get_station_names(from_stop_info.station_name, to_stop_info.station_name)
 
     if form.partition >= 2:
         form.stop_stations = [*form.stop_stations, *divide_trip(train_schedule, form)]
     # filter assigned stop stations
     if len(form.stop_stations) > 0:
-        station_names = [form.from_station, *form.stop_stations, form.to_station]
+        station_names = [from_stop_info.station_name, *form.stop_stations, to_stop_info.station_name]
     stations = await get_station_by_names(station_names)
     if len(stations) != len(station_names):
         raise Exception(
@@ -118,7 +123,7 @@ async def query_tickets(form: QueryTrains, **kwargs) -> List[TrainInfo]:
 
     if not form.force_update:
         train_info_list = ds.get(query_key)
-        
+
     if train_info_list is None:
         train_info_list = await fetch_trains(form)
     elif isinstance(train_info_list, List) and len(train_info_list) == 0:
