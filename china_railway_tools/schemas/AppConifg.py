@@ -10,3 +10,4 @@ class AppConfig(BaseModel):
         'fetch_train_schedule': 5,
         'fetch_train_no': 10,
     })
+    sqlite_dir: str = Field(None, title='sqlite存放路径')

@@ -1,9 +1,9 @@
 # database/connection.py
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-from ..config import SQLALCHEMY_DATABASE_URL
+from ..config import get_default_db_url
 
-ASYNC_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///")
+ASYNC_DATABASE_URL = get_default_db_url().replace("sqlite:///", "sqlite+aiosqlite:///")
 
 async_engine = create_async_engine(
     ASYNC_DATABASE_URL,

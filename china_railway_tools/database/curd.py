@@ -57,7 +57,7 @@ async def query_cached_result(query_key: str, category: str, empty_cb, expire: i
                     query_key=query_key,
                     category=category,
                     date=_date,
-                    result=json.dumps(to_json(new_data), ensure_ascii=False),
+                    result=to_json(new_data),
                 )
                 session.add(query_result)
                 await session.commit()
