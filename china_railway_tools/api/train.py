@@ -8,7 +8,7 @@ from china_railway_tools.schemas.station import Station
 from china_railway_tools.schemas.train import *
 from china_railway_tools.utils.DataStore import DataStore
 from china_railway_tools.utils.cr_fetcher import fetch_trains
-from china_railway_tools.utils.cr_utils import filter_train_by_code, train_data_filter
+from china_railway_tools.utils.cr_utils import train_data_filter, filter_trains
 from china_railway_tools.utils.decorators import validate_query_train, complete_train_no
 
 logger = logging.getLogger(__name__)
@@ -133,13 +133,6 @@ async def query_tickets(form: QueryTrains, **kwargs) -> List[TrainInfo]:
         ds.set([], query_key, 300)
         return []
 
-    if len(form.train_codes) > 0:
-        train_info_list = list(filter_train_by_code(train_info_list, form.train_codes))
-    if len(form.stations) > 0:
-        train_info_list = list(
-            filter(lambda x: x.from_station in form.stations or x.to_station in form.stations, train_info_list))
-    if form.exact and form.from_station_name and form.to_station_name:
-        train_info_list = list(
-            filter(lambda x: x.from_station == form.from_station_name and x.to_station == form.to_station_name,
-                   train_info_list))
-    return train_info_list
+    filtered_trains: List[TrainInfo] = filter_trains(form, train_info_list)
+    filtered_trains = sorted(filtered_trains, key=lambda x: x.from_stop_info.dep_time if x.from_stop_info else None)
+    return filtered_trains

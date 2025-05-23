@@ -163,11 +163,10 @@ def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]
     start_minutes = parse_time_to_minutes(form.start_time) if isinstance(form.start_time, datetime) else None
     end_minutes = parse_time_to_minutes(form.end_time) if isinstance(form.end_time, datetime) else None
 
-    for train in trains:
-        # 筛选车次
-        if form.train_codes and train.train_code not in form.train_codes:
-            continue
+    if form.train_codes:
+        trains = list(filter(lambda x: x.train_code in form.train_codes, trains))
 
+    for train in trains:
         # 筛选出发站 到达站
         if form.stations:
             from_match = any(train.from_station == s for s in form.stations)
