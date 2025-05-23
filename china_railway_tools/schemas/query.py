@@ -19,8 +19,31 @@ class QueryTrains(BaseModel):
     transfer_stations: List[str] = Field([], title='指定换乘车站')
     min_transfer_minutes: int = Field(15, title='最小换乘时间',
                                       description='列车到站距离接续列车开车时间的间隔, 单位:分钟')
+    start_time: str | datetime = Field(None, title='筛选时间段-开始时间')
+    end_time: str | datetime = Field(None, title='筛选时间段-结束时间')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
+
+    @classmethod
+    @model_validator(mode='before')
+    def validate_start_end_time(cls, values):
+        time_format = "%H:%M"
+        fake_date = "2025-01-01"
+        start_time = values.get('start_time')
+        if isinstance(start_time, str):
+            try:
+                values['start_time'] = datetime.strptime(f"{fake_date} {start_time}", f"%Y-%m-%d {time_format}")
+            except ValueError:
+                raise ValueError(f"Invalid start_time format: {start_time}, expected HH:MM")
+
+        end_time = values.get('end_time')
+        if isinstance(end_time, str):
+            try:
+                values['end_time'] = datetime.strptime(f"{fake_date} {end_time}", f"%Y-%m-%d {time_format}")
+            except ValueError:
+                raise ValueError(f"Invalid end_time format: {end_time}, expected HH:MM")
+
+        return values
 
     async def parse_station_name2code(self, parser: Callable[[str], Awaitable[Station]]):
         if is_not_blank(self.from_station_name) and is_blank(self.from_station_code):

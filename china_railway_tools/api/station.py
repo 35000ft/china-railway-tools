@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, asc
 
 from china_railway_tools.database.connection import AsyncSessionLocal
 from china_railway_tools.database.schema import MStation
@@ -27,7 +27,7 @@ async def query_station(keyword: str, **kwargs) -> List[Station]:
                         MStation.pinyin.like(f'%{keyword}%'),
                         MStation.pinyin_abbr.like(f'%{keyword}%')
                     )
-                ).limit(limit)
+                )
 
             # 根据城市或者站名查询
             else:
@@ -36,8 +36,8 @@ async def query_station(keyword: str, **kwargs) -> List[Station]:
                         MStation.city.startswith(keyword),
                         MStation.name.like(f'%{keyword}%')
                     )
-                ).limit(limit)
-
+                )
+        stmt = stmt.order_by(asc(MStation.name)).limit(limit)
         result = await session.execute(stmt)
         station_models = result.scalars().all()
         stations: List[Station] = [Station.model_validate(x) for x in station_models]

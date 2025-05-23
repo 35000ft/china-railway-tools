@@ -23,12 +23,12 @@ class TrainNo(BaseModel):
 
 class StopInfo(BaseModel):
     station_name: str
-    arr_time: str
-    dep_time: str
-    stopover_time: int
-    duration: str
-    arr_day_diff: int
-    station_train_code: str
+    arr_time: str = None
+    dep_time: str = None
+    stopover_time: int = None
+    duration: str = None
+    arr_day_diff: int = None
+    station_train_code: str = None
 
     def get_duration(self):
         hours, minutes = map(int, self.duration.split(':'))
@@ -68,7 +68,7 @@ class TrainInfo(BaseModel):
         return hash((self.train_code, self.train_date, self.from_station, self.to_station))
 
     @classmethod
-    def from_raw_dict(cls, depart_date: str, raw_data: dict):
+    def from_raw_dict(cls, depart_date: str, raw_data: dict, **kwargs):
         """
         :param depart_date: date of current station departure
         :param raw_data: raw data queried from 12306
@@ -92,6 +92,8 @@ class TrainInfo(BaseModel):
             to_station_code=raw_data['to_station_telecode'],
             first_station_code=raw_data['start_station_telecode'],
             end_station_code=raw_data['end_station_telecode'],
+            from_stop_info=kwargs.get('from_stop_info', None),
+            to_stop_info=kwargs.get('to_stop_info', None),
         )
 
     def get_lowest_price(self) -> Decimal:

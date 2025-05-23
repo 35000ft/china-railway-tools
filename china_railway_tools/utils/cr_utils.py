@@ -1,6 +1,7 @@
 import logging
 import re
 
+from china_railway_tools.schemas.query import QueryTrains
 from china_railway_tools.schemas.train import *
 from china_railway_tools.utils.cr_decoder import decode_price, decode_ticket_data
 from china_railway_tools.utils.exception_utils import extract_exception_traceback
@@ -114,6 +115,8 @@ async def parse_ticket_data(_data: dict, dep_date: str) -> List[TrainInfo]:
                            '_num' in key and value != '--']
             # _prices: [{'price': 214, 'seatType': '一等座'}]
             _prices = []
+            from_stop_info = StopInfo(station_name=item.get("from_station_name"), dep_time=item.get('start_time'))
+            to_stop_info = StopInfo(station_name=item.get("to_station_name"), arr_time=item.get('arrive_time'))
             for _seat in _seat_types:
                 _p = decode_price(item['yp_info_new'], _seat)
                 if not _p:
@@ -121,8 +124,89 @@ async def parse_ticket_data(_data: dict, dep_date: str) -> List[TrainInfo]:
                 _p['stock'] = item.get(f'{_seat.lower()}num')
                 _prices.append(_p)
             item['prices'] = _prices
-            train_info = TrainInfo.from_raw_dict(dep_date, item, )
+            train_info = TrainInfo.from_raw_dict(dep_date, item, from_stop_info=from_stop_info,
+                                                 to_stop_info=to_stop_info)
             train_info_list.append(train_info)
         return train_info_list
     except Exception as e:
         logger.error(extract_exception_traceback(e))
+
+
+def parse_time_to_minutes(dt: datetime) -> int:
+    return dt.hour * 60 + dt.minute
+
+
+def parse_str_hhmm_to_minutes(hhmm: str) -> int:
+    dt = datetime.strptime(hhmm, "%H:%M")
+    return dt.hour * 60 + dt.minute
+
+
+def contains_station(stop_list: List['StopInfo'], name: str) -> bool:
+    for stop in stop_list or []:
+        if stop.station_name == name:
+            return True
+    return False
+
+
+def contains_all_stations(stop_list: List[StopInfo], names: List[str]) -> bool:
+    if not stop_list:
+        return True
+    return all(contains_station(stop_list, name) for name in names)
+
+
+def extract_dep_minutes(stop: 'StopInfo') -> int:
+    return parse_str_hhmm_to_minutes(stop.dep_time) if stop and stop.dep_time else -1
+
+
+def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]:
+    result = []
+    start_minutes = parse_time_to_minutes(form.start_time) if isinstance(form.start_time, datetime) else None
+    end_minutes = parse_time_to_minutes(form.end_time) if isinstance(form.end_time, datetime) else None
+
+    for train in trains:
+        # 筛选车次
+        if form.train_codes and train.train_code not in form.train_codes:
+            continue
+
+        # 筛选出发站 到达站
+        if form.stations:
+            from_match = any(train.from_station == s for s in form.stations)
+            to_match = any(train.to_station == s for s in form.stations)
+
+            if len(form.stations) == 1:
+                if not (from_match or to_match):
+                    continue
+            elif len(form.stations) >= 2:
+                if not (from_match and to_match):
+                    continue
+
+        # 所有via_stations都必须在停靠站列表中出现
+        if form.via_stations and train.stop_info_list:
+            if not contains_all_stations(train.stop_info_list, form.via_stations):
+                continue
+
+        # 筛选时间范围
+        if start_minutes is not None or end_minutes is not None:
+            dep_minutes = extract_dep_minutes(train.from_stop_info)
+            if dep_minutes == -1:
+                continue
+            if start_minutes is not None and dep_minutes < start_minutes:
+                continue
+            if end_minutes is not None and dep_minutes > end_minutes:
+                continue
+
+        # 精确出发/到达站名
+        if form.exact:
+            if form.from_station_name and train.from_station != form.from_station_name:
+                continue
+            if form.to_station_name and train.to_station != form.to_station_name:
+                continue
+        else:
+            if form.from_station_name and form.from_station_name not in train.from_station:
+                continue
+            if form.to_station_name and form.to_station_name not in train.to_station:
+                continue
+
+        result.append(train)
+
+    return result
