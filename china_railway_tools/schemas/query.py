@@ -24,7 +24,6 @@ class QueryTrains(BaseModel):
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 
-    @classmethod
     @model_validator(mode='before')
     def validate_start_end_time(cls, values):
         time_format = "%H:%M"
@@ -63,7 +62,6 @@ class QueryTrainSchedule(BaseModel):
     train_code: Optional[str] = Field(default=None, title='列车车次', max_length=10)
     train_no: Optional[str] = Field(default=None, title='列车编号', max_length=50)
 
-    @classmethod
     @model_validator(mode='before')
     def validate_train_no_and_code(cls, values):
         train_no = values.get('train_no')
