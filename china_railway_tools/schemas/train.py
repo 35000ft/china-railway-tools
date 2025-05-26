@@ -34,17 +34,26 @@ class StopInfo(BaseModel):
         hours, minutes = map(int, self.duration.split(':'))
         return hours * 60 + minutes
 
-    def get_arr_time(self):
+    def get_arr_time_in_minute(self):
         if self.arr_time == '----':
             return None
         hours, minutes = map(int, self.arr_time.split(':'))
         return hours * 60 + minutes
 
-    def get_dep_time(self):
+    def get_dep_time_in_minute(self):
         if self.dep_time == '----':
             return None
         hours, minutes = map(int, self.dep_time.split(':'))
         return hours * 60 + minutes
+
+    def get_dep_day_diff(self) -> int:
+        dep_tine_in_minute = self.get_dep_time_in_minute()
+        arr_time_in_minute = self.get_arr_time_in_minute()
+        if dep_tine_in_minute is None or arr_time_in_minute is None:
+            return self.arr_day_diff or 0
+        if dep_tine_in_minute < arr_time_in_minute:
+            return self.arr_day_diff + 1
+        return self.arr_day_diff
 
 
 class TrainInfo(BaseModel):

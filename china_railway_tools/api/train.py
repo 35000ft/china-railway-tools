@@ -45,7 +45,8 @@ def divide_trip(train_schedule: TrainSchedule, form: QueryTrainTicket):
     if form.partition >= len(stations) - 1:
         return [x.station_name for x in stations[1:-1]]
 
-    durations = [stations[index + 1].get_arr_time() - x.get_dep_time() for index, x in enumerate(stations[0:-1])]
+    durations = [stations[index + 1].get_arr_time_in_minute() - x.get_dep_time_in_minute() for index, x in
+                 enumerate(stations[0:-1])]
     partitions = partition_array(durations, form.partition)
     break_points = [stations[x[1]].station_name for x in partitions[0:-1]]
     logger.info(f'{form.from_station}-{form.to_station}: Transfer stations: {','.join(break_points)}')
@@ -58,7 +59,7 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     查询某车次指定区间分段购买的票价
     """
     train_schedule: TrainSchedule = await query_train_schedule(
-        QueryTrainSchedule(train_date=form.train_date, train_no=form.train_no), )
+        QueryTrainSchedule(train_date=form.dep_date, train_no=form.train_no), )
     from_stop_info: StopInfo = train_schedule.get_stop_info(form.from_station)
     to_stop_info: StopInfo = train_schedule.get_stop_info(form.to_station)
 
@@ -70,6 +71,8 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
             to_stop_info.station_name):
         raise Exception("出发站不能在到达站之后")
     station_names = train_schedule.get_station_names(from_stop_info.station_name, to_stop_info.station_name)
+
+    train_date: datetime = form.dep_date - timedelta(days=from_stop_info.get_dep_day_diff())
 
     if form.partition >= 2:
         form.stop_stations = [*form.stop_stations, *divide_trip(train_schedule, form)]
@@ -83,8 +86,9 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     stations = [next((obj for obj in stations if obj.name == name), None) for name in station_names]
 
     async def ticket_task(_station: Station, _next_station: Station):
+        dep_stop_info = train_schedule.get_stop_info(_station.station_name)
         q_ticket = QueryTrains(from_station_code=_station.code, to_station_code=_next_station.code,
-                               dep_date=form.train_date)
+                               dep_date=train_date + timedelta(days=dep_stop_info.get_dep_day_diff()), )
         train_info_list = await query_tickets(q_ticket)
         train_info_list = list(
             filter(lambda x: train_data_filter(x, from_code=_station.code, to_code=_next_station.code,
@@ -109,6 +113,8 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     # 使用 asyncio.gather 等待所有任务完成
     results = await asyncio.gather(*tasks)
     results = list(results)
+    if not results:
+        raise Exception("Fail to query tickets")
     response = TrainTicketResponse.from_raw_data(train_info=results[0], detail_trains=results[1:],
                                                  train_schedule=train_schedule)
     return response

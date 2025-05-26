@@ -124,7 +124,7 @@ async def fetch_train_schedule(form):
         _url = get_url('QUERY_TRAIN_SCHEDULE')
         _params = {
             'leftTicketDTO.train_no': form.train_no,
-            'leftTicketDTO.train_date': form.train_date.strftime('%Y-%m-%d'),
+            'leftTicketDTO.train_date': form.dep_date.strftime('%Y-%m-%d'),
             'rand_code': ''
         }
         logger.info(f'params: {_params}')
@@ -138,7 +138,7 @@ async def fetch_train_schedule(form):
         stop_info_list = raw_data.get('data', {}).get('data')
         raw_dict = {
             'train_no': form.train_no,
-            'train_date': form.train_date.strftime('%Y-%m-%d'),
+            'train_date': form.dep_date.strftime('%Y-%m-%d'),
             'stop_info_list': parse_stop_info_list(stop_info_list)
         }
         return TrainSchedule.from_raw_dict(raw_dict)

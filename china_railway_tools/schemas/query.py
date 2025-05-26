@@ -92,7 +92,8 @@ class QueryTrainSchedules(BaseModel):
 class QueryTrainTicket(BaseModel):
     from_station: str = Field('广州南', title="出发站名", max_length=100)
     to_station: str = Field('南京南', title="到达站名", max_length=100)
-    train_date: datetime = (datetime.now() + timedelta(days=1))
+    dep_date: datetime = Field((datetime.now() + timedelta(days=1)), title='出发站的出发日期',
+                               description='与train_date的概念不同')
     train_no: Optional[str] = Field(None, title='列车编号', max_length=10)
     train_code: Optional[str] = Field(None, title='列车车次', max_length=10)
     stop_stations: Optional[Set[str]] = Field([], title='分段购票换乘站')
