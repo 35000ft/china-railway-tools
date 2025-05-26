@@ -78,7 +78,6 @@ class QueryTrainSchedules(BaseModel):
     via_stations_and: List[str] = Field(default=[], title='车次必须经停这些车站')
     via_stations_or: List[str] = Field(default=[], title='车次必须经停这些车站之一')
 
-    @classmethod
     @model_validator(mode='before')
     def validate_via_stations(cls, values):
         via_stations_or = values.get('via_stations_or')
