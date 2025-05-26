@@ -93,7 +93,7 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     stations = [next((obj for obj in stations if obj.name == name), None) for name in station_names]
 
     async def ticket_task(_station: Station, _next_station: Station):
-        dep_stop_info = train_schedule.get_stop_info(_station.station_name)
+        dep_stop_info = train_schedule.get_stop_info(_station.name)
         q_ticket = QueryTrains(from_station_code=_station.code, to_station_code=_next_station.code,
                                dep_date=train_date + timedelta(days=dep_stop_info.get_dep_day_diff()), )
         train_info_list = await query_tickets(q_ticket)

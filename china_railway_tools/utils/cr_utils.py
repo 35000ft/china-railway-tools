@@ -158,6 +158,20 @@ def extract_dep_minutes(stop: 'StopInfo') -> int:
     return parse_str_hhmm_to_minutes(stop.dep_time) if stop and stop.dep_time else -1
 
 
+def exact_name_filter(form: QueryTrains, train: TrainInfo, exact: bool):
+    if exact:
+        if form.from_station_name and train.from_station != form.from_station_name:
+            return False
+        if form.to_station_name and train.to_station != form.to_station_name:
+            return False
+    else:
+        if form.from_station_name and form.from_station_name not in train.from_station:
+            return False
+        if form.to_station_name and form.to_station_name not in train.to_station:
+            return False
+    return True
+
+
 def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]:
     result = []
     start_minutes = parse_time_to_minutes(form.start_time) if isinstance(form.start_time, datetime) else None
@@ -165,7 +179,7 @@ def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]
 
     if form.train_codes:
         trains = filter_train_by_code(trains, form.train_codes)
-
+    trains = list(filter(lambda t: exact_name_filter(form, t, exact=form.exact), trains))
     for train in trains:
         # 筛选出发站 到达站
         if form.stations:
@@ -192,18 +206,6 @@ def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]
             if start_minutes is not None and dep_minutes < start_minutes:
                 continue
             if end_minutes is not None and dep_minutes > end_minutes:
-                continue
-
-        # 精确出发/到达站名
-        if form.exact:
-            if form.from_station_name and train.from_station != form.from_station_name:
-                continue
-            if form.to_station_name and train.to_station != form.to_station_name:
-                continue
-        else:
-            if form.from_station_name and form.from_station_name not in train.from_station:
-                continue
-            if form.to_station_name and form.to_station_name not in train.to_station:
                 continue
 
         result.append(train)
