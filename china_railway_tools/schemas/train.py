@@ -109,6 +109,9 @@ class TrainInfo(BaseModel):
         ticket = min(self.tickets, key=lambda t: Decimal(t.price))
         return Decimal(ticket.price)
 
+    def get_train_date(self) -> datetime:
+        return datetime.strptime(self.train_date, '%Y-%m-%d')
+
 
 class TrainSchedule(BaseModel):
     train_no: str

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from china_railway_tools.api.common import get_station, train_code2no, get_station_by_names, query_train_schedule
+from china_railway_tools.api.common import get_station, get_station_by_names, query_train_schedule
 from china_railway_tools.schemas.query import *
 from china_railway_tools.schemas.response import TrainTicketResponse
 from china_railway_tools.schemas.station import Station
@@ -9,7 +9,7 @@ from china_railway_tools.schemas.train import *
 from china_railway_tools.utils.DataStore import DataStore
 from china_railway_tools.utils.cr_fetcher import fetch_trains
 from china_railway_tools.utils.cr_utils import train_data_filter, filter_trains
-from china_railway_tools.utils.decorators import validate_query_train, complete_train_no
+from china_railway_tools.utils.decorators import validate_query_train
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def divide_trip(train_schedule: TrainSchedule, form: QueryTrainTicket):
 
         return indices
 
-    stations = train_schedule.get_stations(form.from_station, form.to_station)
+    stations = train_schedule.get_stations(form.from_station_name, form.to_station_name)
     if len(stations) <= 2:
         return []
     if form.partition >= len(stations) - 1:
@@ -49,30 +49,37 @@ def divide_trip(train_schedule: TrainSchedule, form: QueryTrainTicket):
                  enumerate(stations[0:-1])]
     partitions = partition_array(durations, form.partition)
     break_points = [stations[x[1]].station_name for x in partitions[0:-1]]
-    logger.info(f'{form.from_station}-{form.to_station}: Transfer stations: {','.join(break_points)}')
+    logger.info(f'{form.from_station_name}-{form.to_station_name}: Transfer stations: {','.join(break_points)}')
     return break_points
 
 
-@complete_train_no(train_code2no=train_code2no)
 async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
     """
     查询某车次指定区间分段购买的票价
     """
+    query_train_form = QueryTrains(from_station_name=form.from_station_name, to_station_name=form.to_station_name,
+                                   dep_date=form.dep_date, train_codes=[form.train_code], exact=True)
+    trains = await query_tickets(query_train_form)
+    if not trains:
+        raise Exception('No trains found')
+    elif len(trains) > 1:
+        raise Exception(f'More than one train found, trains:{[t.model_dump() for t in trains]}')
+    train: TrainInfo = trains[0]
+    form.train_no = train.train_no
+    train_date: datetime = train.get_train_date()
     train_schedule: TrainSchedule = await query_train_schedule(
-        QueryTrainSchedule(train_date=form.dep_date, train_no=form.train_no), )
-    from_stop_info: StopInfo = train_schedule.get_stop_info(form.from_station)
-    to_stop_info: StopInfo = train_schedule.get_stop_info(form.to_station)
+        QueryTrainSchedule(train_date=train_date, train_no=form.train_no), )
+    from_stop_info: StopInfo = train_schedule.get_stop_info(form.from_station_name)
+    to_stop_info: StopInfo = train_schedule.get_stop_info(form.to_station_name)
 
-    form.from_station = from_stop_info.station_name
-    form.to_station = to_stop_info.station_name
+    form.from_station_name = from_stop_info.station_name
+    form.to_station_name = to_stop_info.station_name
     if from_stop_info is None or to_stop_info is None:
-        raise Exception('出发站或到达站不属于该次列车')
+        raise Exception('The departure station or arrival station is not belongs to this train')
     if train_schedule.get_stop_index(from_stop_info.station_name) > train_schedule.get_stop_index(
             to_stop_info.station_name):
-        raise Exception("出发站不能在到达站之后")
+        raise Exception("The departure station must be before the arrival station")
     station_names = train_schedule.get_station_names(from_stop_info.station_name, to_stop_info.station_name)
-
-    train_date: datetime = form.dep_date - timedelta(days=from_stop_info.get_dep_day_diff())
 
     if form.partition >= 2:
         form.stop_stations = [*form.stop_stations, *divide_trip(train_schedule, form)]
@@ -94,7 +101,7 @@ async def query_train_prices(form: QueryTrainTicket) -> TrainTicketResponse:
             filter(lambda x: train_data_filter(x, from_code=_station.code, to_code=_next_station.code,
                                                train_no=form.train_no, ), train_info_list))
         if len(train_info_list) != 1:
-            logger.warning(f'{_station}-{_next_station} 车票结果不符合预期 {train_info_list}')
+            logger.warning(f'{_station}-{_next_station} ticket result is not expected, expect only one train')
             return None
         train_info: TrainInfo = train_info_list[0]
         train_info.from_stop_info = train_schedule.get_stop_info(_station.name)

@@ -33,7 +33,7 @@ def complete_train_no(train_code2no, train_code_attr_name='train_code', train_da
                 train_code = getattr(form, train_code_attr_name)
                 train_no = getattr(form, train_no_attr_name)
             else:
-                raise TypeError('form must be dict or object with expected attributes')
+                raise TypeError(f'form must be dict or object with expected attributes, type:{type(form)}')
             if not train_no:
                 train_no = await train_code2no(train_code, train_date)
                 if not train_no:

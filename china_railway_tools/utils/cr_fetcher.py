@@ -9,6 +9,7 @@ from lxml import html
 
 from china_railway_tools.config import get_config
 from china_railway_tools.database.schema import MTrainNo
+from china_railway_tools.schemas.query import QueryTrainSchedule
 from china_railway_tools.schemas.station import Station
 from china_railway_tools.schemas.train import TrainSchedule
 from china_railway_tools.utils import exception_utils
@@ -118,13 +119,13 @@ async def fetch_trains(form, **kwargs) -> list:
         return _result
 
 
-async def fetch_train_schedule(form):
+async def fetch_train_schedule(form: QueryTrainSchedule):
     semaphore = await get_semaphore('fetch_train_schedule')
     async with semaphore:
         _url = get_url('QUERY_TRAIN_SCHEDULE')
         _params = {
             'leftTicketDTO.train_no': form.train_no,
-            'leftTicketDTO.train_date': form.dep_date.strftime('%Y-%m-%d'),
+            'leftTicketDTO.train_date': form.train_date.strftime('%Y-%m-%d'),
             'rand_code': ''
         }
         logger.info(f'params: {_params}')
@@ -138,7 +139,7 @@ async def fetch_train_schedule(form):
         stop_info_list = raw_data.get('data', {}).get('data')
         raw_dict = {
             'train_no': form.train_no,
-            'train_date': form.dep_date.strftime('%Y-%m-%d'),
+            'train_date': form.train_date.strftime('%Y-%m-%d'),
             'stop_info_list': parse_stop_info_list(stop_info_list)
         }
         return TrainSchedule.from_raw_dict(raw_dict)
