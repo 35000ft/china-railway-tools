@@ -4,7 +4,7 @@ from typing import Optional, Callable, Awaitable, List, Set
 from pydantic import BaseModel, Field, model_validator
 
 from china_railway_tools.schemas.station import Station
-from china_railway_tools.utils.str_utils import is_not_blank, is_blank
+from china_railway_tools.utils.str_utils import is_not_blank, is_blank, hhmm_to_datetime
 
 
 class QueryTrains(BaseModel):
@@ -26,19 +26,17 @@ class QueryTrains(BaseModel):
 
     @model_validator(mode='before')
     def validate_start_end_time(cls, values):
-        time_format = "%H:%M"
-        fake_date = "2025-01-01"
         start_time = values.get('start_time')
         if isinstance(start_time, str):
             try:
-                values['start_time'] = datetime.strptime(f"{fake_date} {start_time}", f"%Y-%m-%d {time_format}")
+                values['start_time'] = hhmm_to_datetime(start_time)
             except ValueError:
                 raise ValueError(f"Invalid start_time format: {start_time}, expected HH:MM")
 
         end_time = values.get('end_time')
         if isinstance(end_time, str):
             try:
-                values['end_time'] = datetime.strptime(f"{fake_date} {end_time}", f"%Y-%m-%d {time_format}")
+                values['end_time'] = hhmm_to_datetime(end_time)
             except ValueError:
                 raise ValueError(f"Invalid end_time format: {end_time}, expected HH:MM")
 
