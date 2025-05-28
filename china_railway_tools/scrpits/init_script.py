@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
+    await init_db_async()
+    logger.info("sqlite inited")
     await check_update_stations()
     if get_config('auto_clean_train_no'):
         await clean_train_no()
@@ -99,13 +101,9 @@ def run():
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            task = loop.create_task(init_db_async())
-            loop.run_until_complete(task)
-            
             task = loop.create_task(main())
             loop.run_until_complete(task)
         else:
-            asyncio.run(init_db_async())
             asyncio.run(main())
     except RuntimeError as e:
-        print(f"Error: {e}")
+        logger.error(f'china_railway_tools initialization error: {extract_exception_traceback(e)}')
