@@ -8,7 +8,7 @@ from sqlalchemy.dialects.sqlite import insert
 
 from china_railway_tools.config import get_config
 from china_railway_tools.database.connection import AsyncSessionLocal
-from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult
+from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult, init_db_async
 from china_railway_tools.schemas.station import Station
 from china_railway_tools.utils.cr_fetcher import fetch_all_stations
 from china_railway_tools.utils.exception_utils import extract_exception_traceback
@@ -98,11 +98,14 @@ async def clean_cache_result():
 def run():
     try:
         loop = asyncio.get_event_loop()
-
         if loop.is_running():
-            asyncio.ensure_future(main())  # 这种方式不会阻塞当前事件循环
+            task = loop.create_task(init_db_async())
+            loop.run_until_complete(task)
+            
+            task = loop.create_task(main())
+            loop.run_until_complete(task)
         else:
+            asyncio.run(init_db_async())
             asyncio.run(main())
     except RuntimeError as e:
         print(f"Error: {e}")
-        asyncio.run(main())
