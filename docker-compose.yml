@@ -1,0 +1,7 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8250:8250"
+    env_file:
+      - prod.env

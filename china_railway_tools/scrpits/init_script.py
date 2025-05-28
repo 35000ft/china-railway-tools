@@ -96,4 +96,13 @@ async def clean_cache_result():
 
 
 def run():
-    asyncio.run(main())
+    try:
+        loop = asyncio.get_event_loop()
+
+        if loop.is_running():
+            asyncio.ensure_future(main())  # 这种方式不会阻塞当前事件循环
+        else:
+            asyncio.run(main())
+    except RuntimeError as e:
+        print(f"Error: {e}")
+        asyncio.run(main())

@@ -72,5 +72,14 @@ async def init_db_async():
 
 def init_db():
     logger.info('initializing database...')
-    asyncio.run(init_db_async())
+    try:
+        loop = asyncio.get_event_loop()
+
+        if loop.is_running():
+            asyncio.ensure_future(init_db_async())
+        else:
+            asyncio.run(init_db_async())
+    except RuntimeError as e:
+        print(f"Error: {e}")
+        asyncio.run(init_db_async())
     logger.info('database initialized.')
