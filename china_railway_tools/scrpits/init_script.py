@@ -8,7 +8,7 @@ from sqlalchemy.dialects.sqlite import insert
 
 from china_railway_tools.config import get_config
 from china_railway_tools.database.connection import AsyncSessionLocal
-from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult
+from china_railway_tools.database.schema import MStation, MTrainNo, QueryResult, init_db_async
 from china_railway_tools.schemas.station import Station
 from china_railway_tools.utils.cr_fetcher import fetch_all_stations
 from china_railway_tools.utils.exception_utils import extract_exception_traceback
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
+    await init_db_async()
     await check_update_stations()
     if get_config('auto_clean_train_no'):
         await clean_train_no()
@@ -96,4 +97,12 @@ async def clean_cache_result():
 
 
 def run():
-    asyncio.run(main())
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            task = loop.create_task(main())
+            loop.run_until_complete(task)
+        else:
+            asyncio.run(main())
+    except RuntimeError as e:
+        logger.error(f'china_railway_tools initialization error: {extract_exception_traceback(e)}')

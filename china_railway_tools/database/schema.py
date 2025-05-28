@@ -68,9 +68,3 @@ class QueryResult(Base):
 async def init_db_async():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-
-def init_db():
-    logger.info('initializing database...')
-    asyncio.run(init_db_async())
-    logger.info('database initialized.')
