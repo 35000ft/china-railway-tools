@@ -19,8 +19,8 @@ class QueryTrains(BaseModel):
     transfer_stations: List[str] = Field([], title='指定换乘车站')
     min_transfer_minutes: int = Field(15, title='最小换乘时间',
                                       description='列车到站距离接续列车开车时间的间隔, 单位:分钟')
-    start_time: str | datetime = Field(None, title='筛选时间段-开始时间')
-    end_time: str | datetime = Field(None, title='筛选时间段-结束时间')
+    start_time: str | datetime = Field("00:00", title='筛选时间段-开始时间')
+    end_time: str | datetime = Field("23:59", title='筛选时间段-结束时间')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 
