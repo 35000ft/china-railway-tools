@@ -8,18 +8,8 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 
-from app.api import train
+from app.api import train, station
 
-# @asynccontextmanager
-# async def lifespan(_app: FastAPI):
-#     print("Scheduler start")
-#     load_scheduled_tasks_from_package("tasks", scheduler)
-#     scheduler.start()
-#     yield
-#     scheduler.shutdown()
-
-
-# app = FastAPI(docs_url=None, redoc_url=None, )
 app = FastAPI()
 
 
@@ -55,6 +45,8 @@ async def redoc_html():
 
 
 app.include_router(train.get_router(), prefix="/train", tags=["列车信息、车票"])
+app.include_router(station.get_router(), prefix="/station", tags=["车站"])
 
 if os.getenv('ENV') != 'prod':
     uvicorn.run("main:app", host="127.0.0.1", port=8250)
+s
