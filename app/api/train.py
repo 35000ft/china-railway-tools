@@ -18,7 +18,7 @@ async def _query_tickets(form: QueryTrains) -> Response[List[TrainInfo]]:
 
 
 @router.post("/query/train-prices")
-async def _query_train_prices(form: QueryTrainTicket) -> Response[List[TrainInfo]]:
+async def _query_train_prices(form: QueryTrainTicket) -> Response[TrainTicketResponse]:
     return Response.success(await query_train_prices(form))
 
 

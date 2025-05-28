@@ -9,7 +9,9 @@ from fastapi.openapi.docs import (
 )
 
 from app.api import train, station
+from app.util.log_utils import setup_logging
 
+setup_logging()
 app = FastAPI()
 
 
@@ -49,4 +51,3 @@ app.include_router(station.get_router(), prefix="/station", tags=["车站"])
 
 if os.getenv('ENV') != 'prod':
     uvicorn.run("main:app", host="127.0.0.1", port=8250)
-s
