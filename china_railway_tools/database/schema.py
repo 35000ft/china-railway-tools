@@ -66,7 +66,5 @@ class QueryResult(Base):
 
 
 async def init_db_async():
-    logger.info('creating models')
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        logger.info('Models are created')

@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 async def main():
     await init_db_async()
-    logger.info("sqlite inited")
     await check_update_stations()
     if get_config('auto_clean_train_no'):
         await clean_train_no()
