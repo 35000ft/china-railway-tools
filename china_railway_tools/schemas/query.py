@@ -32,12 +32,13 @@ class QueryTrains(BaseModel):
     dep_date: datetime = dep_date
     train_codes: ListArgs[str] = Field([], title='使用车次筛选车次', description='使用车次筛选车次')
     stations: ListArgs[str] = Field([], title='使用站名筛选车站', description='使用站名筛选车站')
-    via_stations: ListArgs[str] = Field([], title='列车需要途径的车站名', description='列车需要途径的车站名')
-    transfer_stations: ListArgs[str] = Field([], title='指定换乘车站', description='指定换乘车站')
-    min_transfer_minutes: int = Field(15, title='最小换乘时间',
-                                      description='最小换乘时间:列车到站距离接续列车开车时间的间隔, 单位:分钟')
-    start_time: str | datetime = Field("00:00", title='筛选时间段-开始时间', description='筛选时间段-开始时间')
-    end_time: str | datetime = Field("23:59", title='筛选时间段-结束时间', description='筛选时间段-结束时间')
+    via_station: Optional[str] = Field(None, title='列车需要途径的车站名', description='列车需要途径的车站名')
+    transfer_stations: Optional[ListArgs[str]] = Field([], title='指定换乘车站', description='指定换乘车站')
+    min_transfer_minutes: Optional[int] = Field(15, title='最小换乘时间',
+                                                description='最小换乘时间:列车到站距离接续列车开车时间的间隔, 单位:分钟')
+    start_time: Optional[str | datetime] = Field("00:00", title='筛选时间段-开始时间',
+                                                 description='筛选时间段-开始时间')
+    end_time: Optional[str | datetime] = Field("23:59", title='筛选时间段-结束时间', description='筛选时间段-结束时间')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 

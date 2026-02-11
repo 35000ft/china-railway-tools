@@ -147,5 +147,23 @@ async def query_tickets(form: QueryTrains, **kwargs) -> List[TrainInfo]:
         return []
 
     filtered_trains: List[TrainInfo] = filter_trains(form, train_info_list)
+
+    # 筛选必须经过的车站
+    if form.via_station:
+        query_to_via_station_form = form.model_copy()
+        query_to_via_station_form.via_station = None
+        query_to_via_station_form.to_station_name = form.via_station
+        query_to_via_station_form.to_station_code = None
+        target_stations = [form.via_station]
+        if form.exact:
+            target_stations.append(form.from_station_name)
+        query_to_via_station_form.stations = target_stations
+
+        via_result = await query_tickets(query_to_via_station_form)
+        if via_result:
+            via_codes = [x.train_code for x in via_result]
+            form.train_codes = via_codes
+            filtered_trains: List[TrainInfo] = filter_trains(form, train_info_list)
+
     filtered_trains = sorted(filtered_trains, key=lambda x: x.from_stop_info.dep_time if x.from_stop_info else None)
     return filtered_trains

@@ -193,11 +193,6 @@ def filter_trains(form: QueryTrains, trains: List[TrainInfo]) -> List[TrainInfo]
                 if not (from_match and to_match):
                     continue
 
-        # 所有via_stations都必须在停靠站列表中出现
-        if form.via_stations and train.stop_info_list:
-            if not contains_all_stations(train.stop_info_list, form.via_stations):
-                continue
-
         # 筛选时间范围
         if start_minutes is not None or end_minutes is not None:
             dep_minutes = extract_dep_minutes(train.from_stop_info)
