@@ -1,26 +1,43 @@
 from datetime import datetime, timedelta
-from typing import Optional, Callable, Awaitable, List, Set
+from typing import Optional, Callable, Awaitable, Set
 
 from pydantic import BaseModel, Field, model_validator
 
 from china_railway_tools.schemas.station import Station
+from china_railway_tools.utils.pydantic_validators import ListArgs
 from china_railway_tools.utils.str_utils import is_not_blank, is_blank, hhmm_to_datetime
+
+from_station_code = Field(None, title="出发站电报码", description='出发站电报码, eg:BJP',
+                          max_length=100)
+from_station_name = Field(None, title="出发站名", description='出发站名, eg:广州南', max_length=100)
+
+to_station_code: Optional[str] = Field(None, title="到达站电报码", description='到达站电报码, eg:BJP',
+                                       max_length=100)
+to_station_name: Optional[str] = Field(None, title="到达站名", description='到达站名, eg:阳江', max_length=100)
+train_code: Optional[str] = Field(default=None, title='列车车次',
+                                  description='列车车次:是列车的重要标识, 但同一个列车会根据车站不同展示不同的车次, 不是唯一标识',
+                                  max_length=10)
+train_no: Optional[str] = Field(default=None, title='列车编号', description='列车编号:是列车的唯一标识', max_length=50)
+
+dep_date: datetime = Field((datetime.now() + timedelta(days=1)), title='出发站的出发日期',
+                           description='出发站的出发日期: 与train_date的概念不同, train_date是该列车在始发站出发的日期')
+train_date: datetime = Field((datetime.now() + timedelta(days=1)), description='车次日期')
 
 
 class QueryTrains(BaseModel):
-    from_station_code: Optional[str] = Field(None, title="出发站电报码", description='广州南', max_length=100)
-    from_station_name: Optional[str] = Field(None, title="出发站名", description='广州南', max_length=100)
-    to_station_code: Optional[str] = Field(None, title="到达站电报码", description='阳江', max_length=100)
-    to_station_name: Optional[str] = Field(None, title="到达站名", description='阳江', max_length=100)
-    dep_date: datetime = Field((datetime.now() + timedelta(days=1)), title="出发日期")
-    train_codes: List[str] = Field([], title='筛选车次')
-    stations: List[str] = Field([], title='筛选车站')
-    via_stations: List[str] = Field([], title='列车需要途径的车站名')
-    transfer_stations: List[str] = Field([], title='指定换乘车站')
+    from_station_code: Optional[str] = from_station_code
+    from_station_name: Optional[str] = from_station_name
+    to_station_code: Optional[str] = to_station_code
+    to_station_name: Optional[str] = to_station_name
+    dep_date: datetime = dep_date
+    train_codes: ListArgs[str] = Field([], title='使用车次筛选车次', description='使用车次筛选车次')
+    stations: ListArgs[str] = Field([], title='使用站名筛选车站', description='使用站名筛选车站')
+    via_stations: ListArgs[str] = Field([], title='列车需要途径的车站名', description='列车需要途径的车站名')
+    transfer_stations: ListArgs[str] = Field([], title='指定换乘车站', description='指定换乘车站')
     min_transfer_minutes: int = Field(15, title='最小换乘时间',
-                                      description='列车到站距离接续列车开车时间的间隔, 单位:分钟')
-    start_time: str | datetime = Field("00:00", title='筛选时间段-开始时间')
-    end_time: str | datetime = Field("23:59", title='筛选时间段-结束时间')
+                                      description='最小换乘时间:列车到站距离接续列车开车时间的间隔, 单位:分钟')
+    start_time: str | datetime = Field("00:00", title='筛选时间段-开始时间', description='筛选时间段-开始时间')
+    end_time: str | datetime = Field("23:59", title='筛选时间段-结束时间', description='筛选时间段-结束时间')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 
@@ -56,25 +73,27 @@ class QueryTrains(BaseModel):
 
 
 class QueryTrainSchedule(BaseModel):
-    train_date: datetime = Field((datetime.now() + timedelta(days=1)))
-    train_code: Optional[str] = Field(default=None, title='列车车次', max_length=10)
-    train_no: Optional[str] = Field(default=None, title='列车编号', max_length=50)
+    train_date: datetime = train_date
+    train_code: Optional[str] = train_code
+    train_no: Optional[str] = train_no
 
     @model_validator(mode='before')
     def validate_train_no_and_code(cls, values):
-        train_no = values.get('train_no')
-        train_code = values.get('train_code')
-        if not train_no and not train_code:
+        _train_no = values.get('train_no')
+        _train_code = values.get('train_code')
+        if not _train_no and not _train_code:
             raise ValueError("Either 'train_no' or 'train_code' is required.")
         return values
 
 
 class QueryTrainSchedules(BaseModel):
-    train_condition: Optional[QueryTrains] = Field(title="车次条件")
-    train_date: datetime = Field((datetime.now() + timedelta(days=1)))
-    train_codes: List[str] = Field(default=[], title='列车车次')
-    via_stations_and: List[str] = Field(default=[], title='车次必须经停这些车站')
-    via_stations_or: List[str] = Field(default=[], title='车次必须经停这些车站之一')
+    train_condition: Optional[QueryTrains] = Field(title="车次查询条件", description='车次查询条件')
+    train_date: datetime = train_date
+    train_codes: ListArgs[str] = Field(default=[], title='列车车次', description='列车车次')
+    via_stations_and: ListArgs[str] = Field(default=[], title='车次必须经停这些车站',
+                                            description='车次必须经停这些车站')
+    via_stations_or: ListArgs[str] = Field(default=[], title='车次必须经停这些车站之一',
+                                           description='车次必须经停这些车站之一')
 
     @model_validator(mode='before')
     def validate_via_stations(cls, values):
@@ -89,17 +108,16 @@ class QueryTrainSchedules(BaseModel):
 class QueryTrainTicket(BaseModel):
     from_station_name: str = Field('广州南', title="出发站名", max_length=100)
     to_station_name: str = Field('南京南', title="到达站名", max_length=100)
-    dep_date: datetime = Field((datetime.now() + timedelta(days=1)), title='出发站的出发日期',
-                               description='与train_date的概念不同')
-    train_no: Optional[str] = Field(None, title='列车编号', max_length=10)
-    train_code: Optional[str] = Field(None, title='列车车次', max_length=10)
-    stop_stations: Optional[Set[str]] = Field([], title='分段购票换乘站')
-    partition: Optional[int] = Field(-1, title='分段购票段数')
+    dep_date: datetime = dep_date
+    train_no: Optional[str] = train_no
+    train_code: Optional[str] = train_code
+    stop_stations: Optional[Set[str]] = Field([], title='分段购票换乘站', description='分段购票换乘站')
+    partition: Optional[int] = Field(-1, title='分段购票段数', description='分段购票段数')
 
     @model_validator(mode='before')
     def validate_train_no_and_code(cls, values):
-        train_no = values.get('train_no')
-        train_code = values.get('train_code')
-        if not train_no and not train_code:
+        _train_no = values.get('train_no')
+        _train_code = values.get('train_code')
+        if not _train_no and not _train_code:
             raise ValueError("Either 'train_no' or 'train_code' is required.")
         return values
