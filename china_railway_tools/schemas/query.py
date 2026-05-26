@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, Callable, Awaitable, Set
+from typing import Optional, Callable, Awaitable, Set, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -39,6 +39,9 @@ class QueryTrains(BaseModel):
     start_time: Optional[str | datetime] = Field("00:00", title='筛选时间段-开始时间',
                                                  description='筛选时间段-开始时间')
     end_time: Optional[str | datetime] = Field("23:59", title='筛选时间段-结束时间', description='筛选时间段-结束时间')
+    order: Optional[Literal['asc', 'desc']] = Field("asc", title='排序', description='正序/逆序')
+    order_by: Optional[Literal['dep_time', 'arr_time', 'price']] = Field("dep_time", title='排序规则',
+                                                                         description='默认按出发时间排序')
     force_update: bool = Field(False, title="是否强制更新", description='是否强制更新(不查询缓存)', )
     exact: bool = Field(False, title="是否精确站名", description='是否精确站名', )
 

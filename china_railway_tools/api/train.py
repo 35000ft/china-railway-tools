@@ -165,5 +165,19 @@ async def query_tickets(form: QueryTrains, **kwargs) -> List[TrainInfo]:
             form.train_codes = via_codes
             filtered_trains: List[TrainInfo] = filter_trains(form, train_info_list)
 
-    filtered_trains = sorted(filtered_trains, key=lambda x: x.from_stop_info.dep_time if x.from_stop_info else None)
+    def sort_key(x: TrainInfo):
+        if form.order_by == 'price':
+            if x.tickets:
+                return x.get_lowest_price()
+            return Decimal('0')
+        elif form.order_by == 'arr_time':
+            if x.to_stop_info and x.to_stop_info.arr_time != '----':
+                return x.to_stop_info.get_arr_time_in_minute() or 0
+            return 0
+        else:
+            if x.from_stop_info and x.from_stop_info.dep_time != '----':
+                return x.from_stop_info.get_dep_time_in_minute() or 0
+            return 0
+
+    filtered_trains = sorted(filtered_trains, key=sort_key, reverse=(form.order == 'desc'))
     return filtered_trains
